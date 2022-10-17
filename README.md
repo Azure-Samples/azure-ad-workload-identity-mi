@@ -22,7 +22,7 @@ products:
 - azure-monitor
 - azure-log-analytics
 - azure-virtual-machines
-name:  Use Azure AD workload identity for Kubernetes with a user-assigned managed identity
+name:  Use Azure AD workload identity for Kubernetes with a user-assigned managed identity in a .NET Standard application
 description: This project shows how to use Azure AD workload identity with a user-assigned managed identity in a .NET Standard application running on Azure Kubernetes Service.
 urlFragment: azure-ad-workload-identity-mi
 azureDeploy: "https://raw.githubusercontent.com/Azure-Samples/azure-ad-workload-identity-mi/main/bicep/azuredeploy.json"
