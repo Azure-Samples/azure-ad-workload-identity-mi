@@ -288,7 +288,7 @@ The following table describes the application settings:
 If you want to debug the application locally, you need to install [Microsoft Visual Studio 2022 or later](https://www.visualstudio.com/) with .NET Standard 6.0. For more information, see [Visual Studio Tools for Docker](https://docs.microsoft.com/en-us/aspnet/core/publishing/visual-studio-tools-for-docker). In addition, make sure to change the values in the `docker-compose.override.yml` as follows:
 
 - You can use the same or an alternative Azure AD application to access the secrets from Key vault that contain the credentials to access the Azure Service Bus namespace, Azure Cosmos DB, and Azure Storage Account. In this case, make sure to specify the name of the Key Vault in the corresponding environment variable and assign the `List` and `Get` permissions to the Azure AD application via access policies or Azure RBAC.
-- As an alternative, you can use the environment variables to specify the credentials to access the Azure Service Bus namespace, Azure Cosmos DB, and Azure Storage Account in the `docker-compose.override.yml` file (not recommended).
+- Alternatively, you can use the environment variables to specify the credentials to access the Azure Service Bus namespace, Azure Cosmos DB, and Azure Storage Account in the `docker-compose.override.yml` file (not recommended).
 
 ## Application Deployment
 
@@ -1646,7 +1646,7 @@ source ./00-variables.sh
 kubectl apply -f $defaultBackendTemplate -n $nginxNamespace
 ```
 
-You can use the `scripts/13-deploy-workload-using-helm.sh` script to deploy the application to your AKS cluster via a [Helm](https://helm.sh/) chart to the target namespace that contains the service account used by the frontend and backend Kubernetes deployments. As an alternative, you can use the `scripts/14-deploy-workload-using-kubectl.sh` script to deploy the sample application using kubectl and YAML manifests.
+You can use the `scripts/13-deploy-workload-using-helm.sh` script to deploy the application to your AKS cluster via a [Helm](https://helm.sh/) chart to the target namespace that contains the service account used by the frontend and backend Kubernetes deployments. Alternatively, you can use the `scripts/14-deploy-workload-using-kubectl.sh` script to deploy the sample application using kubectl and YAML manifests.
 
 ```bash
 #!/bin/bash
@@ -1713,7 +1713,7 @@ fi
 
 ## Testing
 
-If you properly deployed and configure both the frontend and backend application in the same namespace on your AKS cluster, and properly exposed these services via the [NGINX Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/) and [Azure DNS](https://docs.microsoft.com/en-us/azure/dns/dns-overview), you should be able to access both services, as shown in the following pictures:
+If you properly deployed and configured both the frontend and backend application in the same namespace on your AKS cluster, and properly exposed these services via the [NGINX Ingress Controller](https://docs.nginx.com/nginx-ingress-controller/) and [Azure DNS](https://docs.microsoft.com/en-us/azure/dns/dns-overview), you should be able to access both services, as shown in the following pictures:
 
 ![Frontend Application](images/frontend.png)
 
