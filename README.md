@@ -253,7 +253,8 @@ using Azure.Identity;
 ...
 
 // Create ServiceBusClient object
-_serviceBusClient = new ServiceBusClient($"{_options.ServiceBus.Namespace}.servicebus.windows.net", new DefaultAzureCredential());
+_serviceBusClient = new ServiceBusClient($"{_options.ServiceBus.Namespace}.servicebus.windows.net", 
+                                         new DefaultAzureCredential());
 ```
 
 ## Application Configuration
