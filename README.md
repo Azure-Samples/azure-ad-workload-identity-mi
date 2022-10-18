@@ -50,6 +50,16 @@ As shown in the following diagram, the Kubernetes cluster becomes a security tok
 
 ![Azure AD Workload Identity Message Flow](images/message-flow.png)
 
+In Azure Active Directory, there are two kinds of workload identities: registered applications identities and managed Identities. Azure AD registered application Identities have several powerful features, such as multi-tenancy and user sign-in. These capabilities cause application identities to be closely guarded by administrators. In many organizations, developers don’t have the right permissions to create registered application identities in the Azure Active Directory tenant or modify them. It is challenging for developers to use [workload identity federation](https://learn.microsoft.com/en-us/azure/active-directory/develop/workload-identity-federation) using registered applications as identities since they have to open a ticket and ask the IT administrators to create or update these entities in the corporate Azure Active Directory tenant. For more information on how to implement workload identity federation with registered applications, see [Use Azure AD Workload Identity for Kubernetes with a User-Assigned Managed Identity](https://techcommunity.microsoft.com/t5/fasttrack-for-azure/use-azure-ad-workload-identity-for-kubernetes-in-a-net-standard/ba-p/3576218).
+
+[Managed identities](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview) provide an automatically managed identity in Azure Active Directory for applications to use when connecting to resources that support Azure Active Directory (Azure AD) authentication. Applications can use managed identities to obtain Azure AD tokens without having to manage any credentials. Managed identities were built with developer scenarios in mind. They support only the Client Credentials flow meant for software workloads to identify themselves when accessing other resources. 
+
+A common challenge for developers is the management of secrets, credentials, certificates, and keys used to secure communication between services. Managed identities eliminate the need for developers to manage these credentials. The secrets are managed by the Azure platform, simplifying the developer experience. However, you can only use managed identities for your software workloads running in Azure, for example, in Azure Kubernetes Service, an Azure virtual machine, Azure App Service, or Azure Functions.
+
+Now that  [workload identity federation](https://learn.microsoft.com/en-us/azure/active-directory/develop/workload-identity-federation) is supported on managed identities, you can use these identities for software workloads running outside Azure: including pods running in an on-premises Kubernetes cluster or GitHub Actions workflows. You now have a choice of using managed identities or registered applications, depending on which is more convenient for you. The federation capabilities are identical in both cases: you can add a trust (a federated credential) to either of these identities and use a trusted federated token to get an Azure AD access token for these identities.
+
+Note: Managed Identities come in two kinds: system-assigned and user-assigned. The lifecycle of system-assigned managed identity is tied to an Azure compute resource like VM, so it does not make sense to allow adding a workload identity federation on those identities. Workload identity federation is supported only on user-assigned managed identities.
+
 For more information, see the following resources:
 
 - [Azure Workload Identity open-source project](https://azure.github.io/azure-workload-identity)
@@ -62,6 +72,39 @@ For more information, see the following resources:
 - [Azure AD workload identity federation with Kubernetes](https://blog.identitydigest.com/azuread-federate-k8s/)
 - [Azure Active Directory Workload Identity Federation with external OIDC Identy Providers](https://arsenvlad.medium.com/azure-active-directory-workload-identity-federation-with-external-oidc-idp-4f06c9205a26)
 - [Minimal Azure AD Workload identity federation](https://cookbook.geuer-pollmann.de/azure/workload-identity-federation)
+
+## Service account labels and annotations
+
+[Azure AD workload identity](https://learn.microsoft.com/en-us/azure/aks/workload-identity-overview) supports the following mappings related to a service account:
+
+- One-to-one where a service account references an Azure AD object.
+- Many-to-one where multiple service accounts references the same Azure AD object.
+- One-to-many where a service account references multiple Azure AD objects by changing the client ID annotation.
+
+The following tables describe a list of available labels and annotations that can be used to configure the behavior when exchanging the service account token for an Azure AD access token.
+
+### Service account labels
+
+|Label |Description |Recommended value |Required |
+|------|------------|------------------|---------|
+|`azure.workload.identity/use` |Represents the service account<br> is to be used for workload identity. |true |Yes |
+
+### Service account annotations
+
+|Annotation |Description |Default |
+|-----------|------------|--------|
+|`azure.workload.identity/client-id` |Represents the Azure AD application<br> client ID to be used with the pod. ||
+|`azure.workload.identity/tenant-id` |Represents the Azure tenant ID where the<br> Azure AD application is registered. |AZURE_TENANT_ID environment variable extracted<br> from `azure-wi-webhook-config` ConfigMap.|
+|`azure.workload.identity/service-account-token-expiration` |Represents the `expirationSeconds` field for the<br> projected service account token. It's an optional field that you configure to prevent downtime<br> caused by errors during service account token refresh. Kubernetes service account token expiry isn't correlated with Azure AD tokens. Azure AD tokens expire in 24 hours after they're issued. |3600<br> Supported range is 3600-86400.|
+
+### Pod annotations
+
+|Annotation |Description |Default |
+|-----------|------------|--------|
+|`azure.workload.identity/service-account-token-expiration` |Represents the `expirationSeconds` field for the projected service account token. It's an optional field that you configure to prevent any downtime caused by errors during service account token refresh. Kubernetes service account token expiry isn't correlated with Azure AD tokens. Azure AD tokens expire in 24 hours after they're issued. <sup>1</sup> |3600<br> Supported range is 3600-86400. |
+|`azure.workload.identity/skip-containers` |Represents a semi-colon-separated list of containers to skip adding projected service account token volume. For example `container1;container2`. |By default, the projected service account token volume is added to all containers if the service account is labeled with `azure.workload.identity/use: true`. |
+|`azure.workload.identity/inject-proxy-sidecar` |Injects a proxy init container and proxy sidecar into the pod. The proxy sidecar is used to intercept token requests to IMDS and acquire an Azure AD token on behalf of the user with federated identity credential. |true |
+|`azure.workload.identity/proxy-sidecar-port` |Represents the port of the proxy sidecar. |8080 |
 
 ### Prerequisites
 
@@ -1329,6 +1372,25 @@ else
   fi
 fi
 ```
+
+You can also use the Azure Portal to federate the user-assigned managed identity with the Kubernetes service account used by your workload or just check the details of the federation if you created it using a script. First, go to your user-assigned managed identity in the Azure portal and click the “Federated credentials" link shown in the following figure:
+
+![User-Assigned Managed Identity](./images/managed-identity-01.png)
+
+On the next page, you can configure an identity from an external OpenID Connect Provider to get tokens as this managed identity to access Azure AD-protected services. In our sample, the external OpenID Connect Provider is represented by the OIDC issues of the AKS cluster. Every managed identity can be federated via OpenID Connect with up to 20 external identities.
+
+![User-Assigned Managed Identity](./images/managed-identity-02.png)
+
+If you click the link of an existing federation to read or update its data.
+
+![User-Assigned Managed Identity](./images/managed-identity-03.png)
+
+As shown in the figure above, you can review or update the following parameters:
+
+- Federated credential scenario. In our case, we selected the scenario that allows to configure a Kubernetes service account to get security tokens from Azure AD to let our AKS-hosted workloads access Azure resources such as Azure Cosmos DB or Azure Key Vault.
+- Cluster Issuer URL. In our case, this is the URL of the OpenID Connect token issuer of our AKS cluster.
+- Namespace: this is the namespace of our AKS-hosted workloads.
+- Service Account: this is the service account in the above namespace that is used by our workloads.
 
 You can use the `scripts/08-create-service-account.sh` script to create a Kubernetes service account in the application namespace and annotate it with the client ID of the user-assigned managed identity. The last step of the script establishes federated identity credential between the managed identity and the service account issuer and subject. This service account is used by the Kubernetes deployment of both the frontend and backend services. For more details, see the `scripts/todolist.yml` YAML manifest or the Helm chart under the `chart` folder.
 
