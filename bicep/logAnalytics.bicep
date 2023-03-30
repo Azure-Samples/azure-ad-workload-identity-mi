@@ -20,9 +20,6 @@ param location string = resourceGroup().location
 @description('Specifies the resource tags.')
 param tags object
 
-// Variables
-var containerInsightsSolutionName = 'ContainerInsights(${name})'
-
 // Resources
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' = {
   name: name
@@ -33,22 +30,6 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-12
       name: sku
     }
     retentionInDays: retentionInDays
-  }
-}
-
-resource containerInsightsSolution 'Microsoft.OperationsManagement/solutions@2015-11-01-preview' = {
-  name: containerInsightsSolutionName
-  location: location
-  tags: tags
-  plan: {
-    name: containerInsightsSolutionName
-    promotionCode: ''
-    product: 'OMSGallery/ContainerInsights'
-    publisher: 'Microsoft'
-  }
-  properties: {
-    workspaceResourceId: logAnalyticsWorkspace.id
-    containedResources: []
   }
 }
 
